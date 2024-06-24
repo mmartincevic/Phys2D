@@ -125,12 +125,6 @@ void render()
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
 
-    /*void PrintParticles() {
-        for (int i = 0; i < NUM_PARTICLES; ++i) {
-            p2::particle* particle = &particles[i];
-            printf("particle[%i] (%.2f, %.2f)\n", i, particle->position.x, particle->position.y);
-        }
-    }*/
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for particles
 
     for (int i = 0; i < NUM_PARTICLES; ++i) {

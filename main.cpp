@@ -5,17 +5,20 @@
 #include <random>
 
 #include "Source/p2particle.h"
+#include "Source/p2rigidBody.h"
 
 // Function prototypes
 void handleEvents(bool& running);
 void update(float deltaTime);
 void render();
 void InitializeParticles();
+void InitializeBodies();
 
-const int NUM_PARTICLES = 20;
+const int NUM_PARTICLES     = 20;
+const int NUM_RIGIDBODIES   = 20;
 
-
-p2::particle particles[NUM_PARTICLES];
+p2::particle    particles[NUM_PARTICLES];
+p2::rigidBody   rigidBodies[NUM_RIGIDBODIES];
 
 int main(int argc, char* argv[])
 {
@@ -52,6 +55,7 @@ int main(int argc, char* argv[])
     Uint32 lastTime = SDL_GetTicks();
 
     InitializeParticles();
+    InitializeBodies();
 
     while (running)
     {
@@ -81,6 +85,8 @@ Vector2D ComputeForce(p2::particle* particle) {
 std::random_device rd;  // Obtain a random number from hardware
 std::mt19937 gen(rd()); // Seed the generator
 std::uniform_int_distribution<> distr(100, 800); // Define the range
+std::uniform_int_distribution<> distr_angle(0, 360); // Define the range
+std::uniform_int_distribution<> distr_length(10, 30);
 
 void InitializeParticles() {
     for (int i = 0; i < NUM_PARTICLES; ++i) {
@@ -89,6 +95,33 @@ void InitializeParticles() {
         particles[i].position = position;
         particles[i].velocity = velocity;
         particles[i].mass = 1;
+    }
+}
+
+void CalculateBoxInertia(p2::shapeBox* boxShape) {
+    float m = boxShape->mass;
+    float w = boxShape->width;
+    float h = boxShape->height;
+    boxShape->momentOfInertia = m * (w * w + h * h) / 12;
+}
+
+void InitializeBodies()
+{
+    for (int i = 0; i < NUM_RIGIDBODIES; ++i) {
+        p2::rigidBody* rigidBody = &rigidBodies[i];
+        Vector2D position = { static_cast<float>(distr(gen)), static_cast<float>(distr(gen)) };
+        rigidBody->position = position;
+        rigidBody->angle = distr_angle(gen) / 360.f * M_PI * 2;
+        Vector2D linearVelocity = { 0, 0 };
+        rigidBody->linearVelocity = linearVelocity;
+        rigidBody->angularVelocity = 0;
+
+        p2::shapeBox shape;
+        shape.mass = 0.2f;
+        shape.width = 1 + distr_length(gen);
+        shape.height = 1 + distr_length(gen);
+        CalculateBoxInertia(&shape);
+        rigidBody->shape = shape;
     }
 }
 
@@ -106,9 +139,17 @@ void handleEvents(bool& running)
     }
 }
 
+void ComputeForceAndTorque(p2::rigidBody* rigidBody) {
+    Vector2D f = { 0, 100 };
+    rigidBody->force = f;
+    // r is the 'arm vector' that goes from the center of mass to the point of force application
+    Vector2D r = { rigidBody->shape.width / 2, rigidBody->shape.height / 2 };
+    rigidBody->torque = r.x * f.y - r.y * f.x;
+
+}
 void update(float deltaTime)
 {
-    for (int i = 0; i < NUM_PARTICLES; ++i) {
+    /*for (int i = 0; i < NUM_PARTICLES; ++i) {
         p2::particle * particle = &particles[i];
         Vector2D force = ComputeForce(particle);
         Vector2D acceleration = { force.x / particle->mass, force.y / particle->mass };
@@ -116,6 +157,19 @@ void update(float deltaTime)
         particle->velocity.y += acceleration.y * deltaTime;
         particle->position.x += particle->velocity.x * deltaTime;
         particle->position.y += particle->velocity.y * deltaTime;
+    }*/
+
+    for (int i = 0; i < NUM_RIGIDBODIES; ++i) {
+        p2::rigidBody* rigidBody = &rigidBodies[i];
+        ComputeForceAndTorque(rigidBody);
+        Vector2D linearAcceleration = { rigidBody->force.x / rigidBody->shape.mass, rigidBody->force.y / rigidBody->shape.mass };
+        rigidBody->linearVelocity.x += linearAcceleration.x * deltaTime;
+        rigidBody->linearVelocity.y += linearAcceleration.y * deltaTime;
+        rigidBody->position.x += rigidBody->linearVelocity.x * deltaTime;
+        rigidBody->position.y += rigidBody->linearVelocity.y * deltaTime;
+        float angularAcceleration = rigidBody->torque / rigidBody->shape.momentOfInertia;
+        rigidBody->angularVelocity += angularAcceleration * deltaTime;
+        rigidBody->angle += rigidBody->angularVelocity * deltaTime;
     }
 }
 
@@ -127,9 +181,20 @@ void render()
 
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // White color for particles
 
-    for (int i = 0; i < NUM_PARTICLES; ++i) {
+    /*for (int i = 0; i < NUM_PARTICLES; ++i) {
         p2::particle* particle = &particles[i];
         SDL_RenderDrawPoint(renderer, static_cast<int>(particle->position.x), static_cast<int>(particle->position.y));
+    }*/
+
+    for (int i = 0; i < NUM_RIGIDBODIES; ++i) {
+        p2::rigidBody* rigidBody = &rigidBodies[i];
+        SDL_Rect rect;
+        //SDL_RenderDrawRect(renderer, static_cast<int>(rigidBody->position.x), static_cast<int>(rigidBody->position.y), static_cast<int>(rigidBody->angle));
+        rect.x = static_cast<int>(rigidBody->position.x);
+        rect.y = static_cast<int>(rigidBody->position.y);
+        rect.w = rigidBody->shape.width;
+        rect.h = rigidBody->shape.width;
+        SDL_RenderFillRect(renderer, &rect);
     }
 
     SDL_RenderPresent(renderer);

@@ -29,5 +29,11 @@
     <ClInclude Include="Source\p2particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\p2rigidBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\p2shapeBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

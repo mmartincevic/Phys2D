@@ -2,10 +2,13 @@
 #include "SDL.h"
 #undef main
 
+
+#include "Source/Tree/p2qt.h"
 #include <random>
 
 #include "Source/p2particle.h"
 #include "Source/p2rigidBody.h"
+
 
 // Function prototypes
 void handleEvents(bool& running);
@@ -13,12 +16,15 @@ void update(float deltaTime);
 void render();
 void InitializeParticles();
 void InitializeBodies();
+void AddParticleAtPosition(Vector2D position);
 
 const int NUM_PARTICLES     = 20;
 const int NUM_RIGIDBODIES   = 20;
 
 p2::particle    particles[NUM_PARTICLES];
 p2::rigidBody   rigidBodies[NUM_RIGIDBODIES];
+
+p2::QT<int>* qtree; // Quadtree instance
 
 int main(int argc, char* argv[])
 {
@@ -56,6 +62,12 @@ int main(int argc, char* argv[])
 
     InitializeParticles();
     InitializeBodies();
+
+    Vector2D origin(0, 0);
+    Vector2D axis(128.0, 128.0);
+    static int bucketSize = 100;
+
+    qtree = new p2::QT<int>(origin, axis, bucketSize);
 
     while (running)
     {
@@ -135,8 +147,37 @@ void handleEvents(bool& running)
         {
             running = false;
         }
+        else if (event.type == SDL_MOUSEBUTTONDOWN)
+        {
+            if (event.button.button == SDL_BUTTON_LEFT)
+            {
+                int x = event.button.x;
+                int y = event.button.y;
+                Vector2D position = { static_cast<float>(x), static_cast<float>(y) };
+                AddParticleAtPosition(position);
+            }
+        }
+
+
         // Handle other events like keyboard, mouse, etc.
     }
+}
+
+void AddParticleAtPosition(Vector2D position) {
+    //static int particleIndex = NUM_PARTICLES; // Start adding new particles after the initial ones
+
+    //if (particleIndex < NUM_PARTICLES * 2) { // Assuming a maximum of twice the initial number of particles
+    //    particles[particleIndex % NUM_PARTICLES].position = position;
+    //    particles[particleIndex % NUM_PARTICLES].velocity = { 0, 0 };
+    //    particles[particleIndex % NUM_PARTICLES].mass = 1;
+
+    //    qtree->insert(position, 1);
+
+    //    ++particleIndex;
+    //}
+
+    qtree->insert(position, 1);
+
 }
 
 void ComputeForceAndTorque(p2::rigidBody* rigidBody) {
@@ -186,6 +227,8 @@ void render()
         SDL_RenderDrawPoint(renderer, static_cast<int>(particle->position.x), static_cast<int>(particle->position.y));
     }*/
 
+    qtree->draw(renderer);
+
     for (int i = 0; i < NUM_RIGIDBODIES; ++i) {
         p2::rigidBody* rigidBody = &rigidBodies[i];
         SDL_Rect rect;
@@ -196,6 +239,7 @@ void render()
         rect.h = rigidBody->shape.width;
         SDL_RenderFillRect(renderer, &rect);
     }
+    
 
     SDL_RenderPresent(renderer);
 }

@@ -10,8 +10,11 @@
 #include <vector>
 #include <stdlib.h>
 
+#include "../p2body.h"
+
 #include "p2qtnode.h"
 #include <SDL.h>
+
 
 using namespace std;
 
@@ -38,7 +41,8 @@ namespace p2
         QT<T>(Vector2D center, Vector2D range, unsigned bucketSize = 1, unsigned depth = 16);
         ~QT();
 
-        void            insert(Vector2D v, T data);
+        //void            insert(Vector2D v, T data);
+        void            insert(p2::body* p2Body, T data);
         bool            contains(Vector2D v);
         bool            remove(Vector2D v);
         void            draw(SDL_Renderer* renderer);
@@ -50,7 +54,8 @@ namespace p2
         QTNode<T>*  childNode(const Vector2D& v, QTNode<T>* node);
         Vector2D    newCenter(int direction, QTNode <T>* node);
         int         direction(const Vector2D& point, QTNode <T>* node);
-        void        insert(Vector2D v, T data, QTNode<T>* node, unsigned depth);
+        //void        insert(Vector2D v, T data, QTNode<T>* node, unsigned depth);
+        void        insert(p2::body* p2Body, T data, QTNode<T>* node, unsigned depth);
         void        reduce(stack <QTNode<T>*>& node);
         void        draw(QTNode<T>* node, SDL_Renderer* renderer);
         void        print(QTNode <T>* node, stringstream& ss);
@@ -77,10 +82,16 @@ namespace p2
         delete root;
     }
 
-    template <typename T>
+    /*template <typename T>
     void p2::QT<T>::insert(Vector2D v, T data)
     {
         insert(v, data, root, 0);
+    }*/
+
+    template <typename T>
+    void p2::QT<T>::insert(p2::body* p2Body, T data)
+    {
+        insert(p2Body, data, root, 0);
     }
 
     template <typename T>
@@ -137,28 +148,28 @@ namespace p2
     }
 
     template <typename T>
-    void p2::QT<T>::insert(Vector2D v, T data, p2::QTNode<T>* node, unsigned depth)
+    void p2::QT<T>::insert(p2::body* p2Body, T data, p2::QTNode<T>* node, unsigned depth)
     {
         // by design, vertices are stored only in leaf nodes
         // newly created nodes are leaf nodes by default
         if (node->leaf) {
             // there is room in this node's bucket
             if (node->bucket.size() < maxBucketSize) {
-                node->bucket.push_back({ v, data });
+                node->bucket.push_back({ p2Body, data });
             }
             // bucket is full, so push all vertices to next depth,
             // clear the current node's bucket and make it a stem
             else if (depth < maxDepth) {
                 node->leaf = false;
-                insert(v, data, childNode(v, node), depth + 1);
+                insert(p2Body, data, childNode(p2Body->GetPosition(), node), depth + 1);
                 for (int i = 0; i < node->bucket.size(); ++i) {
-                    insert(node->bucket[i].first, data, childNode(node->bucket[i].first, node), depth + 1);
+                    insert(node->bucket[i].first, data, childNode(node->bucket[i].first->GetPosition(), node), depth + 1);
                 }
                 node->bucket.clear();
             }
         }
         else {
-            insert(v, data, childNode(v, node), depth + 1);
+            insert(p2Body, data, childNode(p2Body->GetPosition(), node), depth + 1);
         }
     }
 
@@ -394,7 +405,40 @@ namespace p2
     {
 
         SDL_Rect rect;
-        //SDL_RenderDrawRect(renderer, static_cast<int>(rigidBody->position.x), static_cast<int>(rigidBody->position.y), static_cast<int>(rigidBody->angle));
+
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x + node->range.x, node->center.y + node->range.y);
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x + node->range.x, node->center.y - node->range.y);
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x - node->range.x, node->center.y - node->range.y);
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x - node->range.x, node->center.y + node->range.y);
+
+       /* int startx = node->center.x + node->range.x;
+        int starty = node->center.y + node->range.y;
+        int endx = node->center.x - node->range.x;
+        int endy = node->center.y - node->range.y;
+
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x + node->range.x * 2, node->center.y);
+        SDL_RenderDrawLine(renderer, node->center.x, node->center.y, node->center.x, node->center.y + node->range.y * 2);
+
+        SDL_RenderDrawLine(renderer, 
+            node->center.x, 
+            node->center.y + node->range.y * 2, 
+            node->center.x + node->range.x * 2, 
+            node->center.y + node->range.y * 2);
+
+        SDL_RenderDrawLine(renderer,
+            node->center.x + node->range.x * 2,
+            node->center.y,
+            node->center.x + node->range.x * 2,
+            node->center.y + node->range.y * 2);
+
+        rect.x = static_cast<int>(node->center.x);
+        rect.y = static_cast<int>(node->center.y);
+        rect.w = node->range.x;
+        rect.h = node->range.y;
+        SDL_RenderDrawRect(renderer, &rect);*/
+
+
+
         rect.x = static_cast<int>(node->center.x + node->range.x);
         rect.y = static_cast<int>(node->center.y + node->range.y);
         rect.w = 20;
@@ -403,7 +447,8 @@ namespace p2
 
         for (int i = 0; i < node->bucket.size(); ++i) {
             //Vector2D vect(node->center.x, node->center.y);
-            Vector2D vect(node->bucket[i].first.x, node->bucket[i].first.y);
+            //Vector2D vect(node->bucket[i].first.x, node->bucket[i].first.y);
+            Vector2D vect = node->bucket[i].first->GetPosition();
             rect.x = static_cast<int>(vect.x);
             rect.y = static_cast<int>(vect.y);
             rect.w = 20;

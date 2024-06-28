@@ -135,13 +135,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\p2body.cpp" />
+    <ClCompile Include="Source\p2world.cpp" />
     <ClCompile Include="Source\Tree\p2qt.cpp" />
     <ClCompile Include="Source\Utils\Vector2D.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="functions.h" />
+    <ClInclude Include="Source\p2body.h" />
+    <ClInclude Include="Source\p2bodyDef.h" />
+    <ClInclude Include="Source\p2common.h" />
     <ClInclude Include="Source\p2particle.h" />
     <ClInclude Include="Source\p2rigidBody.h" />
     <ClInclude Include="Source\p2shapeBox.h" />
+    <ClInclude Include="Source\p2transform.h" />
+    <ClInclude Include="Source\p2world.h" />
     <ClInclude Include="Source\Tree\p2qt.h" />
     <ClInclude Include="Source\Tree\p2qtnode.h" />
     <ClInclude Include="Source\Utils\Vector2D.h" />

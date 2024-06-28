@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <vector>
 #include <utility>
-#include "../Utils/Vector2D.h"
 
 namespace p2
 {
@@ -27,7 +26,7 @@ namespace p2
 
             bool leaf;
             QTNode* child[4];
-            std::vector <std::pair <Vector2D, T> > bucket;
+            std::vector <std::pair <p2::body*, T>> bucket;
     };
 };
 #endif
